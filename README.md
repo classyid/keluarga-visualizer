@@ -22,7 +22,7 @@
 
 ### Menggunakan Versi Online
 
-Kunjungi [https://keluarga-visualizer.vercel.app](https://keluarga-visualizer.vercel.app) untuk menggunakan aplikasi tanpa perlu menginstal apapun.
+Kunjungi [Website Keluarga Visualizer](https://classyid.github.io/keluarga-visualizer/keluarga.html) untuk menggunakan aplikasi tanpa perlu menginstal apapun.
 
 ### Menjalankan Secara Lokal
 
