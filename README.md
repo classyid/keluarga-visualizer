@@ -1,6 +1,6 @@
 # Keluarga Visualizer
 
-![Banner Keluarga Visualizer](https://via.placeholder.com/800x200?text=Keluarga+Visualizer)
+![Banner Keluarga Visualizer](https://blog.classy.id/upload/gambar_berita/d063fc794698d6699b3f646f5f4b7d5d_20250328094620.png)
 
 ## 📋 Deskripsi
 
