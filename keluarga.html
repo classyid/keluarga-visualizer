@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Family Data Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Core Styles */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Tree View Styles */
+        .tree-node {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .highlight {
+            background-color: #e0e7ff !important;
+        }
+        .tree-node::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            width: 15px;
+            height: 1px;
+            background: #e5e7eb;
+        }
+        .tree-node::after {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: -50%;
+            bottom: 50%;
+            width: 1px;
+            background: #e5e7eb;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+            .tree-node {
+                margin-left: 10px !important;
+                font-size: 14px;
+            }
+            .form-input {
+                font-size: 16px;
+            }
+            .button-group {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .tree-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Scrollbar Styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Animation */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-8">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg flex flex-col items-center">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-gray-600">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <div class="container mx-auto px-4">
+        <!-- Instructions Panel -->
+        <div class="bg-blue-50 p-4 rounded-lg mb-8">
+            <h3 class="font-bold text-blue-800 mb-2">Cara Penggunaan:</h3>
+            <ol class="list-decimal list-inside text-blue-700 space-y-1">
+                <li>Untuk menambah generasi awal (0), kosongkan Parent ID</li>
+                <li>Untuk menambah anak, klik tombol "+ Tambah Anak" pada data orang tua</li>
+                <li>ID akan muncul di sebelah nama setiap anggota keluarga</li>
+                <li>Generasi akan otomatis terisi saat menambah anak</li>
+                <li>Data tersimpan otomatis di browser Anda</li>
+                <li>Gunakan fitur Export untuk backup data</li>
+            </ol>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Data Manager</h2>
+                <form id="dataForm" class="space-y-4">
+                    <!-- Form fields akan dilanjutkan di bagian berikutnya -->
+<div class="form-group">
+                        <label class="form-label">Nama</label>
+                        <input type="text" name="name" class="form-input" required 
+                               pattern="[A-Za-z\s']+" title="Gunakan huruf, spasi, dan apostrof saja">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Generasi</label>
+                        <select name="generation" class="form-input" required>
+                            <option value="0">0 (Generasi Awal)</option>
+                            <option value="1">1 (Anak)</option>
+                            <option value="2">2 (Cucu)</option>
+                            <option value="3">3 (Cicit)</option>
+                            <option value="4">4 (Canggah)</option>
+                            <option value="5">5 (Wareng)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <div class="space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="deceased" class="form-checkbox h-4 w-4 text-indigo-600">
+                                <span class="ml-2">Almarhum/ah</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Pasangan</label>
+                        <input type="text" name="spouse" class="form-input"
+                               pattern="[A-Za-z\s']+" title="Gunakan huruf, spasi, dan apostrof saja">
+                        <label class="inline-flex items-center mt-2">
+                            <input type="checkbox" name="spouseDeceased" class="form-checkbox h-4 w-4 text-indigo-600">
+                            <span class="ml-2">Pasangan Almarhum/ah</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Parent ID (ID orang tua)</label>
+                        <input type="text" name="parentId" class="form-input">
+                        <p class="text-sm text-gray-500">*Kosongkan jika ini adalah generasi awal</p>
+                    </div>
+
+                    <div class="button-group grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                            Tambah Data
+                        </button>
+                        <button type="button" id="generateBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            Generate CompleteData
+                        </button>
+                        <button type="button" id="clearBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            Clear Data
+                        </button>
+                    </div>
+
+                    <!-- Import/Export buttons -->
+                    <div class="mt-4 flex gap-2">
+                        <input type="file" id="importFile" accept=".json" class="hidden">
+                        <button type="button" onclick="document.getElementById('importFile').click()" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Import Data
+                        </button>
+                        <button type="button" onclick="exportData()" 
+                                class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
+                            Export Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tree View Section -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Data Tree</h2>
+                    <div class="flex gap-2">
+                        <input type="text" 
+                               id="searchInput" 
+                               placeholder="Cari nama..." 
+                               class="px-3 py-1 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <select id="filterGeneration" 
+                                class="px-3 py-1 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">Semua Generasi</option>
+                            <option value="0">Generasi 0</option>
+                            <option value="1">Generasi 1</option>
+                            <option value="2">Generasi 2</option>
+                            <option value="3">Generasi 3</option>
+                            <option value="4">Generasi 4</option>
+                            <option value="5">Generasi 5</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="treeView" class="space-y-2 custom-scrollbar" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Tree nodes will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Generated Code Section -->
+            <div class="bg-white p-6 rounded-lg shadow md:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Generated CompleteData</h2>
+                    <div class="flex gap-2">
+                        <button id="copyBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                            Copy Code
+                        </button>
+                        <button id="validateBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            Validate Data
+                        </button>
+                    </div>
+                </div>
+                <div id="generatedCode" class="json-output custom-scrollbar">
+                    // CompleteData will appear here
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let familyData = [];
+        let currentId = 1;
+        let undoStack = [];
+        let redoStack = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initializeEventListeners();
+        });
+
+		// Tambahkan fungsi-fungsi ini sebelum initializeEventListeners()
+
+// Update Tree View
+function updateTreeView() {
+    const treeView = document.getElementById('treeView');
+    treeView.innerHTML = '';
+
+    function renderTree(nodes, level = 0) {
+        nodes.forEach(person => {
+            const nodeElement = createTreeNodeElement(person, level);
+            treeView.appendChild(nodeElement);
+            if (person.children && person.children.length > 0) {
+                renderTree(person.children, level + 1);
+            }
+        });
+    }
+
+    renderTree(familyData);
+    generateCompleteData();
+    saveToLocalStorage();
+}
+
+// Generate Complete Data
+function generateCompleteData() {
+    function cleanData(data) {
+        return data.map(person => {
+            const cleaned = {
+                name: person.name,
+                generation: person.generation
+            };
+            if (person.deceased) cleaned.deceased = true;
+            if (person.spouse) {
+                cleaned.spouse = person.spouse;
+                if (person.spouseDeceased) cleaned.spouseDeceased = true;
+            }
+            if (person.children && person.children.length > 0) {
+                cleaned.children = cleanData(person.children);
+            }
+            return cleaned;
+        });
+    }
+
+    const completeData = cleanData(familyData);
+    
+    document.getElementById('generatedCode').textContent = 
+        'const completeData = ' + JSON.stringify(completeData, null, 2) + ';';
+}
+
+// Validate All Data
+function validateAllData() {
+    showLoading();
+    try {
+        let isValid = true;
+        let errors = [];
+
+        function validateNode(node, parentNode = null) {
+            try {
+                // Validasi nama
+                if (!node.name || node.name.trim() === '') {
+                    errors.push(`Invalid name for ID: ${node.id}`);
+                    isValid = false;
+                }
+
+                // Validasi generasi
+                if (typeof node.generation !== 'number' || node.generation < 0) {
+                    errors.push(`Invalid generation for ${node.name}`);
+                    isValid = false;
+                }
+
+                // Validasi hierarki generasi
+                if (parentNode && node.generation <= parentNode.generation) {
+                    errors.push(`Invalid generation hierarchy: ${node.name} must have higher generation than ${parentNode.name}`);
+                    isValid = false;
+                }
+
+                // Validasi children
+                if (node.children && Array.isArray(node.children)) {
+                    node.children.forEach(child => validateNode(child, node));
+                }
+            } catch (error) {
+                errors.push(`Error validating ${node.name}: ${error.message}`);
+                isValid = false;
+            }
+        }
+
+        familyData.forEach(node => validateNode(node));
+
+        if (isValid) {
+            showToast('Data valid!', 'success');
+        } else {
+            showToast('Data validation failed', 'error');
+            console.error('Validation errors:', errors);
+            alert('Validation errors found:\n' + errors.join('\n'));
+        }
+    } catch (error) {
+        showToast('Validation error: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Search function
+function searchTree(query) {
+    const lowercaseQuery = query.toLowerCase();
+    document.querySelectorAll('.tree-node').forEach(node => {
+        const text = node.textContent.toLowerCase();
+        const matches = text.includes(lowercaseQuery);
+        
+        if (matches) {
+            node.style.display = '';
+            node.classList.add('highlight');
+            // Ensure parent nodes are visible
+            let parent = node.parentElement;
+            while (parent) {
+                if (parent.classList.contains('tree-node')) {
+                    parent.style.display = '';
+                }
+                parent = parent.parentElement;
+            }
+        } else {
+            node.style.display = 'none';
+            node.classList.remove('highlight');
+        }
+    });
+}
+
+// Filter by Generation
+function filterByGeneration(generation) {
+    document.querySelectorAll('.tree-node').forEach(node => {
+        if (generation === 'all' || node.getAttribute('data-generation') === generation) {
+            node.style.display = '';
+        } else {
+            node.style.display = 'none';
+        }
+    });
+}
+
+// Find Person
+function findPerson(id) {
+    function search(nodes) {
+        for (let node of nodes) {
+            if (node.id === id) return node;
+            if (node.children && node.children.length > 0) {
+                const found = search(node.children);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    return search(familyData);
+}
+
+// Add Child Helper
+function addChild(parentId) {
+    const parent = findPerson(parentId);
+    if (parent) {
+        const form = document.getElementById('dataForm');
+        form.reset();
+        form.elements['parentId'].value = parentId;
+        form.elements['generation'].value = parent.generation + 1;
+        
+        form.scrollIntoView({ behavior: 'smooth' });
+        form.classList.add('highlight');
+        setTimeout(() => form.classList.remove('highlight'), 2000);
+    }
+}
+
+// Show Edit Form
+function showEditForm(id) {
+    const person = findPerson(id);
+    if (person) {
+        const form = document.getElementById('dataForm');
+        form.elements['name'].value = person.name;
+        form.elements['generation'].value = person.generation;
+        form.elements['deceased'].checked = person.deceased;
+        form.elements['spouse'].value = person.spouse || '';
+        form.elements['spouseDeceased'].checked = person.spouseDeceased;
+        form.elements['parentId'].value = person.parentId || '';
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Update Data';
+        
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            undoStack.push([...familyData]); // Save state for undo
+            
+            person.name = sanitizeInput(formData.get('name'));
+            person.generation = parseInt(formData.get('generation'));
+            person.deceased = formData.get('deceased') === 'on';
+            person.spouse = sanitizeInput(formData.get('spouse') || '');
+            person.spouseDeceased = formData.get('spouseDeceased') === 'on';
+            
+            updateTreeView();
+            
+            // Reset form
+            form.reset();
+            submitBtn.textContent = 'Tambah Data';
+            form.onsubmit = null;
+            
+            showToast('Data berhasil diupdate', 'success');
+        };
+
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Undo/Redo Functions
+function undo() {
+    if (undoStack.length > 0) {
+        redoStack.push([...familyData]);
+        familyData = undoStack.pop();
+        updateTreeView();
+        showToast('Undo berhasil', 'info');
+    }
+}
+
+function redo() {
+    if (redoStack.length > 0) {
+        undoStack.push([...familyData]);
+        familyData = redoStack.pop();
+        updateTreeView();
+        showToast('Redo berhasil', 'info');
+    }
+}
+		
+        // Local Storage Functions
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('familyData', JSON.stringify(familyData));
+                localStorage.setItem('currentId', currentId.toString());
+            } catch (error) {
+                showToast('Error saving data: ' + error.message, 'error');
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('familyData');
+                const savedId = localStorage.getItem('currentId');
+                
+                if (savedData) {
+                    familyData = JSON.parse(savedData);
+                    currentId = parseInt(savedId) || 1;
+                    updateTreeView();
+                }
+            } catch (error) {
+                showToast('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        // UI Utilities
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function confirmAction(message) {
+            return new Promise((resolve) => {
+                const result = window.confirm(message);
+                resolve(result);
+            });
+        }
+
+        // Validation Functions
+        function validatePerson(person) {
+            if (!person.name || person.name.trim() === '') {
+                throw new Error('Name is required');
+            }
+
+            if (person.parentId) {
+                const parent = findPerson(person.parentId);
+                if (!parent) {
+                    throw new Error('Parent not found');
+                }
+                if (person.generation <= parent.generation) {
+                    throw new Error('Child generation must be greater than parent generation');
+                }
+            }
+
+            return true;
+        }
+
+        function sanitizeInput(input) {
+            return input.replace(/[<>]/g, '').trim();
+        }
+
+        // Data Management Functions
+        function generateUniqueId() {
+            return `person_${currentId++}`;
+        }
+		// Tree View Management
+        function createTreeNodeElement(person, level = 0) {
+            const div = document.createElement('div');
+            div.style.marginLeft = `${level * 20}px`;
+            div.className = 'tree-node p-2 border rounded hover:bg-gray-50 mb-2 fade-in';
+            div.setAttribute('data-id', person.id);
+            div.setAttribute('data-generation', person.generation);
+
+            div.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-sm text-gray-500">[ID: ${person.id}]</span>
+                        <span class="font-medium">${person.name} ${person.deceased ? '(Alm)' : ''}</span>
+                    </div>
+                    <div class="tree-actions flex gap-2">
+                        <button onclick="addChild('${person.id}')" 
+                                class="tooltip text-green-600 hover:text-green-800 transition-colors">
+                            <span class="tooltip-text">Tambah Anak</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </button>
+                        <button onclick="showEditForm('${person.id}')"
+                                class="tooltip text-blue-600 hover:text-blue-800 transition-colors">
+                            <span class="tooltip-text">Edit</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <button onclick="confirmAndRemovePerson('${person.id}')"
+                                class="tooltip text-red-600 hover:text-red-800 transition-colors">
+                            <span class="tooltip-text">Hapus</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                ${person.spouse ? `
+                    <div class="text-sm text-gray-600">
+                        Pasangan: ${person.spouse} ${person.spouseDeceased ? '(Alm)' : ''}
+                    </div>
+                ` : ''}
+                <div class="text-sm text-gray-500">
+                    Generasi: ${person.generation}
+                </div>
+            `;
+
+            return div;
+        }
+
+        async function addPerson(formData) {
+            showLoading();
+            try {
+                const person = {
+                    id: generateUniqueId(),
+                    name: sanitizeInput(formData.get('name')),
+                    generation: parseInt(formData.get('generation')),
+                    deceased: formData.get('deceased') === 'on',
+                    spouse: sanitizeInput(formData.get('spouse') || ''),
+                    spouseDeceased: formData.get('spouseDeceased') === 'on',
+                    parentId: formData.get('parentId') || null,
+                    children: []
+                };
+
+                validatePerson(person);
+
+                // Save state for undo
+                undoStack.push([...familyData]);
+                redoStack = [];
+
+                if (person.parentId) {
+                    let success = false;
+                    function addToParent(nodes) {
+                        for (let node of nodes) {
+                            if (node.id === person.parentId) {
+                                node.children.push(person);
+                                success = true;
+                                return true;
+                            }
+                            if (node.children.length > 0) {
+                                if (addToParent(node.children)) return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    if (!addToParent(familyData)) {
+                        familyData.push(person);
+                    }
+                } else {
+                    familyData.push(person);
+                }
+
+                updateTreeView();
+                showToast('Data berhasil ditambahkan', 'success');
+                return person;
+            } catch (error) {
+                showToast(error.message, 'error');
+                return null;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function confirmAndRemovePerson(id) {
+            const person = findPerson(id);
+            if (!person) return;
+
+            const hasChildren = person.children && person.children.length > 0;
+            const message = hasChildren 
+                ? `Hapus ${person.name} dan semua anaknya?`
+                : `Hapus ${person.name}?`;
+
+            if (await confirmAction(message)) {
+                removePerson(id);
+            }
+        }
+
+        function removePerson(id) {
+            undoStack.push([...familyData]);
+            redoStack = [];
+
+            function removeFromArray(array) {
+                const index = array.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    array.splice(index, 1);
+                    return true;
+                }
+                for (let person of array) {
+                    if (removeFromArray(person.children)) return true;
+                }
+                return false;
+            }
+
+            removeFromArray(familyData);
+            updateTreeView();
+            showToast('Data berhasil dihapus', 'success');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(familyData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `family-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Data berhasil di-export', 'success');
+        }
+
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (await confirmAction('Import akan menggantikan data yang ada. Lanjutkan?')) {
+                        familyData = data;
+                        updateTreeView();
+                        saveToLocalStorage();
+                        showToast('Data berhasil di-import', 'success');
+                    }
+                } catch(error) {
+                    showToast('File tidak valid', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Event Listeners
+        function initializeEventListeners() {
+            // Form submission
+            document.getElementById('dataForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                if (!e.target.onsubmit) {
+                    if (await addPerson(formData)) {
+                        e.target.reset();
+                    }
+                }
+            });
+
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTree(e.target.value);
+            });
+
+            // Generation filter
+            document.getElementById('filterGeneration').addEventListener('change', (e) => {
+                filterByGeneration(e.target.value);
+            });
+
+            // Import file handling
+            document.getElementById('importFile').addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    importData(e.target.files[0]);
+                }
+            });
+
+            // Clear data
+            document.getElementById('clearBtn').addEventListener('click', async () => {
+                if (await confirmAction('Hapus semua data?')) {
+                    familyData = [];
+                    currentId = 1;
+                    updateTreeView();
+                    showToast('Semua data berhasil dihapus', 'success');
+                }
+            });
+
+            // Copy button
+            document.getElementById('copyBtn').addEventListener('click', () => {
+                const code = document.getElementById('generatedCode').textContent;
+                navigator.clipboard.writeText(code)
+                    .then(() => showToast('Code berhasil dicopy!', 'success'))
+                    .catch(() => {
+                        // Fallback
+                        const textarea = document.createElement('textarea');
+                        textarea.value = code;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showToast('Code berhasil dicopy!', 'success');
+                    });
+            });
+
+            // Validate button
+            document.getElementById('validateBtn').addEventListener('click', validateAllData);
+			
+			// Generate button (tambahkan di sini)
+    document.getElementById('generateBtn').addEventListener('click', () => {
+        generateCompleteData();
+        showToast('CompleteData berhasil di-generate', 'success');
+    });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'z':
+                            e.preventDefault();
+                            undo();
+                            break;
+                        case 'y':
+                            e.preventDefault();
+                            redo();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            saveToLocalStorage();
+                            showToast('Data tersimpan', 'success');
+                            break;
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        updateTreeView();
+    </script>
+</body>
+</html>
