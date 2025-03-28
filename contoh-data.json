@@ -1,0 +1,84 @@
+const completeData = [
+  {
+    "name": "Haji Slamet Riyadi",
+    "generation": 0,
+    "deceased": true,
+    "spouse": "Hj. Siti Aminah",
+    "spouseDeceased": true,
+    "children": [
+      {
+        "name": "Ahmad Sukarno",
+        "generation": 1,
+        "deceased": true,
+        "spouse": "Maryati",
+        "children": [
+          {
+            "name": "Budi Santoso",
+            "generation": 2,
+            "spouse": "Dewi Lestari",
+            "children": [
+              {
+                "name": "Putri Santoso",
+                "generation": 3
+              },
+              {
+                "name": "Andi Santoso",
+                "generation": 3,
+                "spouse": "Sari Indah",
+                "children": [
+                  {
+                    "name": "Bayu Santoso",
+                    "generation": 4
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Rina Sukarno",
+            "generation": 2,
+            "spouse": "Joko Widodo",
+            "children": [
+              {
+                "name": "Dinda Widodo",
+                "generation": 3,
+                "spouse": "Rendi Pratama"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Siti Rahayu",
+        "generation": 1,
+        "spouse": "Bambang Susilo",
+        "spouseDeceased": true,
+        "children": [
+          {
+            "name": "Agus Susilo",
+            "generation": 2,
+            "spouse": "Nina Anggraini",
+            "children": [
+              {
+                "name": "Dimas Susilo",
+                "generation": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Muhammad Yusuf",
+        "generation": 1,
+        "spouse": "Fatimah Azzahra",
+        "children": [
+          {
+            "name": "Anisa Yusuf",
+            "generation": 2,
+            "spouse": "Rizki Mahendra"
+          }
+        ]
+      }
+    ]
+  }
+];
