@@ -36,12 +36,11 @@ Kunjungi [Website Keluarga Visualizer](https://classyid.github.io/keluarga-visua
    cd keluarga-visualizer
    ```
 
-3. Buka file `index.html` di browser Anda
+3. Buka file `keluarga.html` di browser Anda
 
 ## 📱 Tampilan Aplikasi
 
-![Tampilan Desktop](https://via.placeholder.com/800x450?text=Tampilan+Desktop)
-![Tampilan Mobile](https://via.placeholder.com/400x700?text=Tampilan+Mobile)
+![Tampilan Desktop](https://blog.classy.id/upload/gambar_berita/d063fc794698d6699b3f646f5f4b7d5d_20250328095252.png)
 
 ## 🛠️ Teknologi yang Digunakan
 
@@ -68,4 +67,4 @@ Project ini dilisensikan di bawah [MIT License](./LICENSE).
 
 ---
 
-Dibuat dengan ❤️ oleh [Nama Anda](https://github.com/username)
+Dibuat dengan ❤️ oleh [Andri Wiratmono](https://github.com/classyid)
